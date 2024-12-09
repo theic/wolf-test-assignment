@@ -24,13 +24,11 @@ export class AiService {
     this.apiEndpoint = aiConfig.endpoint;
     this.authToken = aiConfig.authToken;
 
-    // 20 requests per minute
     this.minuteRateLimiter = new RateLimiterMemory({
       points: 20,
       duration: 60,
     });
 
-    // 300 requests per hour
     this.hourRateLimiter = new RateLimiterMemory({
       points: 300,
       duration: 3600,
@@ -61,7 +59,6 @@ export class AiService {
     `;
 
     try {
-      // Check both rate limits
       await Promise.all([
         this.minuteRateLimiter.consume('ai-analysis'),
         this.hourRateLimiter.consume('ai-analysis')
@@ -110,7 +107,6 @@ export class AiService {
       const content = response.candidates[0].content;
       const analysisText = content.parts[0].text;
       
-      // Extract the JSON part from the response
       const jsonMatch = analysisText.match(/```json\n([\s\S]*?)\n```/);
       if (!jsonMatch) {
         throw new Error('No JSON found in response');

@@ -1,4 +1,3 @@
-// Mock the pdf-parse module
 jest.mock('pdf-parse', () => {
   return jest.fn().mockImplementation(() => {
     return Promise.resolve({
@@ -7,7 +6,6 @@ jest.mock('pdf-parse', () => {
   });
 });
 
-// Mock axios for AI service calls
 jest.mock('axios', () => ({
   post: jest.fn().mockImplementation(() => {
     return Promise.resolve({
@@ -21,7 +19,3 @@ jest.mock('axios', () => ({
     });
   }),
 }));
-
-// Mock environment variables
-// process.env.API_ENDPOINT = 'https://test-api.example.com';
-// process.env.AUTH_TOKEN = 'test-token'; 

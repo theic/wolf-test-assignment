@@ -8,7 +8,7 @@ interface StoredFile {
 
 @Injectable()
 export class FileStoreService {
-  // In-memory storage (replace with proper storage in production)
+  // TODO: Replace with actual file storage in production
   private fileStore: Map<string, StoredFile> = new Map();
 
   async storeFile(buffer: Buffer, text: string): Promise<string> {
