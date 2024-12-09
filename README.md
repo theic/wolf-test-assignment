@@ -5,9 +5,10 @@ This API service analyzes CVs against job descriptions using AI to provide detai
 ## Features
 
 - PDF parsing for both CVs and job descriptions
-- AI-powered analysis using Gemini 1.5 Flash
+- AI-powered analysis using Gemini API
 - tRPC endpoints for type-safe API calls
 - Detailed analysis of candidate strengths, weaknesses, and job fit
+- Built-in rate limiting (20 req/min, 300 req/hour)
 
 ## Setup
 
@@ -75,14 +76,3 @@ Run the test suite:
 ```bash
 npm test
 ```
-
-## Error Handling
-
-The API returns detailed error messages for:
-- Invalid PDF files
-- API rate limiting
-- Analysis failures
-
-## License
-
-MIT
