@@ -4,6 +4,10 @@ import axios from 'axios';
 import { AiConfig, ConfigName } from '../../../config';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import type { GenerateContentRequest } from '@google-cloud/vertexai';
+import { RATE_LIMITS } from '../../../constants/rate-limits';
+import { API_HEADERS, HTTP_STATUS } from '../../../constants/api';
+import { createAnalysisPrompt, createGeminiRequest } from '../../../utils/api.utils';
+import { parseAiResponse } from '../../../utils/parser.utils';
 
 export interface AnalysisResponse {
   strengths: string[];
@@ -25,59 +29,30 @@ export class AiService {
     this.authToken = aiConfig.authToken;
 
     this.minuteRateLimiter = new RateLimiterMemory({
-      points: 20,
-      duration: 60,
+      points: RATE_LIMITS.PER_MINUTE.POINTS,
+      duration: RATE_LIMITS.PER_MINUTE.DURATION,
     });
 
     this.hourRateLimiter = new RateLimiterMemory({
-      points: 300,
-      duration: 3600,
+      points: RATE_LIMITS.PER_HOUR.POINTS,
+      duration: RATE_LIMITS.PER_HOUR.DURATION,
     });
   }
 
   async analyze(cvText: string, jobDescText: string): Promise<AnalysisResponse> {
-    const prompt = `
-      Please analyze the following CV and job description. Provide a structured response with the following:
-      1. List the candidate's key strengths relevant to this role
-      2. List potential weaknesses or gaps
-      3. Rate the overall fit on a scale of 1-10
-      4. Provide a brief explanation of the rating
-      
-      Format the response in JSON with the following structure:
-      {
-        "strengths": string[],
-        "weaknesses": string[],
-        "overallFit": number,
-        "explanation": string
-      }
-
-      CV:
-      ${cvText}
-      
-      Job Description:
-      ${jobDescText}
-    `;
-
     try {
       await Promise.all([
-        this.minuteRateLimiter.consume('ai-analysis'),
-        this.hourRateLimiter.consume('ai-analysis')
+        this.minuteRateLimiter.consume(RATE_LIMITS.KEY),
+        this.hourRateLimiter.consume(RATE_LIMITS.KEY)
       ]);
     } catch (error) {
       throw new Error('Rate limit exceeded. Please try again later.');
     }
 
-    const request: GenerateContentRequest = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }],
-        },
-      ],
-    };
-
+    const prompt = createAnalysisPrompt(cvText, jobDescText);
+    const request = createGeminiRequest(prompt);
     const response = await this.callGeminiApi(request);
-    return this.parseResponse(response);
+    return parseAiResponse(response);
   }
 
   private async callGeminiApi(request: GenerateContentRequest) {
@@ -88,36 +63,17 @@ export class AiService {
         {
           headers: {
             Authorization: this.authToken,
-            'Content-Type': 'application/json',
+            'Content-Type': API_HEADERS.CONTENT_TYPE,
           },
         },
       );
 
       return response.data;
     } catch (error) {
-      if (error.response?.status === 429) {
+      if (error.response?.status === HTTP_STATUS.RATE_LIMIT_EXCEEDED) {
         throw new Error('Rate limit exceeded. Please try again later.');
       }
       throw new Error(`AI API call failed: ${error.message}`);
-    }
-  }
-
-  private parseResponse(response: any): AnalysisResponse {
-    try {
-      const content = response.candidates[0].content;
-      const analysisText = content.parts[0].text;
-      
-      const jsonMatch = analysisText.match(/```json\n([\s\S]*?)\n```/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
-      }
-      
-      const jsonStr = jsonMatch[1];
-      return JSON.parse(jsonStr);
-    } catch (error) {
-      console.error('Parse error:', error);
-      console.error('Raw response:', JSON.stringify(response, null, 2));
-      throw new Error('Failed to parse AI response');
     }
   }
 } 
