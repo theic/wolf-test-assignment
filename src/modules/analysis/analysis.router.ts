@@ -13,14 +13,15 @@ export class AnalysisRouter {
     uploadFile: t.procedure
       .input(
         z.object({
-          file: z.instanceof(Buffer),
+          file: z.array(z.number()),
           type: z.enum(['cv', 'jobDescription']),
           filename: z.string(),
         }),
       )
       .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.file);
         return await this.analysisService.uploadFile(
-          input.file,
+          buffer,
           input.type,
           input.filename,
         );

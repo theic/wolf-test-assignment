@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PdfService } from './pdf.service';
-import { AiService } from './ai.service';
+import { AiService, AnalysisResponse } from './ai.service';
 import { FileStoreService } from './file-store.service';
 
 @Injectable()
@@ -25,7 +25,7 @@ export class AnalysisService {
     }
   }
 
-  async analyze(cvId: string, jobDescriptionId: string) {
+  async analyze(cvId: string, jobDescriptionId: string): Promise<AnalysisResponse> {
     try {
       const cv = this.fileStore.getFile(cvId);
       const jobDesc = this.fileStore.getFile(jobDescriptionId);
