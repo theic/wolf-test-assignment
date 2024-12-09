@@ -15,7 +15,7 @@ This API service analyzes CVs against job descriptions using AI to provide detai
 1. Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:theic/wolf-test-assignment.git
 ```
 
 2. Install dependencies:
@@ -47,9 +47,9 @@ The API exposes a tRPC endpoint for CV analysis. Here's an example using the tRP
 
 ```typescript
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
-import type { AnalysisRouter } from './modules/analysis/analysis.router';
+import type { AppRouter } from './modules/analysis/analysis.router';
 
-const client = createTRPCProxyClient<AnalysisRouter>({
+const client = createTRPCProxyClient<AppRouter>({
   links: [
     httpBatchLink({
       url: 'http://localhost:3000/trpc',
@@ -58,9 +58,23 @@ const client = createTRPCProxyClient<AnalysisRouter>({
 });
 
 // Example usage
+// First, upload the files
+const cvUpload = await client.uploadFile.mutate({
+  file: Array.from(cvPdfBuffer),
+  type: 'cv',
+  filename: 'resume.pdf'
+});
+
+const jobDescUpload = await client.uploadFile.mutate({
+  file: Array.from(jobDescPdfBuffer),
+  type: 'jobDescription',
+  filename: 'job.pdf'
+});
+
+// Then analyze using the file IDs
 const analysis = await client.analyze.mutate({
-  cv: cvPdfBuffer,
-  jobDescription: jobDescPdfBuffer
+  cvId: cvUpload.fileId,
+  jobDescriptionId: jobDescUpload.fileId
 });
 ```
 
